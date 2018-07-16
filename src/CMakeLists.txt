@@ -472,23 +472,44 @@ if (MONGOC_INCLUDES_FOLDER AND MONGOC_LIBRARY_PATH AND BSON_INCLUDES_FOLDER AND 
     include_directories("${BSON_INCLUDES_FOLDER}/libbson-1.0")
 
     target_link_libraries(fastnetmon ${MONGOC_LIBRARY_PATH} ${BSON_LIBRARY_PATH})
+
+# Try to find mongo-c and bson paths using pkg-config
+elseif (PKG_CONFIG_FOUND)
+    pkg_search_module(MONGOC libmongoc-1.0)
+    pkg_search_module(BSON libbson-1.0)
+    if(MONGOC_FOUND AND BSON_FOUND)
+        message(STATUS "We have found mongo-c and bson on your system")
+#        add_definitions(-DMONGO)
+	include_directories("${MONGOC_INCLUDEDIR}/libmongoc-1.0")
+	include_directories("${BSON_INCLUDEDIR}/libbson-1.0")
+	find_library(MONGOC_LIBRARY_PATH NAMES mongoc-1.0 PATHS "${MONGOC_LIBDIR}" NO_DEFAULT_PATH)
+	find_library(BSON_LIBRARY_PATH NAMES bson-1.0 PATHS "${BSON_LIBDIR}" NO_DEFAULT_PATH)
+    endif()
 else()
     message(WARNING "We can't find Mongo C library")
 endif()
 
 ### Look for libpcap
 
-#find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+# Try to find libpcap in the custom path
+find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
-#find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH)
+    include_directories(${LIBPCAP_INCLUDES_FOLDER})
+    message(STATUS "We have found a custom libpcap in ${LIBPCAP_CUSTOM_INSTALL_PATH} and will build project")
 
-#if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH) 
-#    message(STATUS "We found pcap library ${LIBPCAP_LIBRARY_PATH}")
+# Try to find libpcap paths using pkg-config
+else()
+    check_include_file(pcap.h PCAP_HEADER_FOUND)
+    check_library_exists(pcap pcap_lookupdev "" PCAP_LIBRARY_FOUND)
 
-#    include_directories(${LIBPCAP_INCLUDES_FOLDER})
-#else()
-#    message(FATAL_ERROR "We can't find pcap library")    
-#endif()
+    if (PCAP_HEADER_FOUND AND PCAP_LIBRARY_FOUND)
+        message(STATUS "We have found libpcap on your system")
+    else ()
+        message(FATAL_ERROR "We can't find pcap library")
+    endif()
+endif()
 
 ### Look for log4cpp
 
@@ -515,12 +536,23 @@ endif()
 
 ### Look for jsonc
 
+# Try to find json-c includes path in the custom path
 find_path(JSONC_INCLUDES_FOLDER NAMES json-c/json.h PATHS "${JSONC_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
 find_library(JSONC_LIBRARY_PATH NAMES json-c PATHS "${JSONC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
 if (JSONC_INCLUDES_FOLDER AND JSONC_LIBRARY_PATH)
     include_directories(${JSONC_INCLUDES_FOLDER}) 
     message(STATUS "We have found json-c library correctly: ${JSONC_LIBRARY_PATH}")
+
+# Try to find json-c paths using pkg-config
+elseif (PKG_CONFIG_FOUND)
+    pkg_search_module(JSONC json-c)
+    if(JSONC_FOUND)
+        message(STATUS "We have found json-c on your system")
+        include_directories(JSONC_INCLUDEDIR)
+	find_library(JSONC_LIBRARY_PATH NAMES json-c PATHS "${JSONC_LIBDIR}" NO_DEFAULT_PATH)
+    endif()
+
 else()
     message(FATAL_ERROR "We can't find json-c library! Can't build project")
 endif()
