@@ -24,6 +24,7 @@ project(FastNetMon)
 include(CheckCXXCompilerFlag)
 include(CheckLibraryExists)
 include(FindPkgConfig)
+include(CheckIncludeFile)
 
 # Enable it and fix all warnigns!
 # add_definitions ("-Wall")
