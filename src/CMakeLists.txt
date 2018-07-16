@@ -455,38 +455,40 @@ else()
     message(STATUS "We can't find hiredis library and will disable Redis support")
 endif()
 
-### Find mongo-c
-find_path(MONGOC_INCLUDES_FOLDER NAMES libmongoc-1.0/mongoc.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-find_library(MONGOC_LIBRARY_PATH NAMES mongoc-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+if (ENABLE_MONGO_SUPPORT)
+    ### Find mongo-c
+    find_path(MONGOC_INCLUDES_FOLDER NAMES libmongoc-1.0/mongoc.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+    find_library(MONGOC_LIBRARY_PATH NAMES mongoc-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
-### find bson
-find_path(BSON_INCLUDES_FOLDER NAMES libbson-1.0/bson.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-find_library(BSON_LIBRARY_PATH NAMES bson-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+    ### find bson
+    find_path(BSON_INCLUDES_FOLDER NAMES libbson-1.0/bson.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+    find_library(BSON_LIBRARY_PATH NAMES bson-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
-if (MONGOC_INCLUDES_FOLDER AND MONGOC_LIBRARY_PATH AND BSON_INCLUDES_FOLDER AND BSON_LIBRARY_PATH)
-    message(STATUS "We found mongo-c library ${MONGOC_INCLUDES_FOLDER} ${MONGOC_LIBRARY_PATH} ${BSON_INCLUDES_FOLDER} ${BSON_LIBRARY_PATH}")
-    add_definitions(-DMONGO)
+    if (MONGOC_INCLUDES_FOLDER AND MONGOC_LIBRARY_PATH AND BSON_INCLUDES_FOLDER AND BSON_LIBRARY_PATH)
+        message(STATUS "We found mongo-c library ${MONGOC_INCLUDES_FOLDER} ${MONGOC_LIBRARY_PATH} ${BSON_INCLUDES_FOLDER} ${BSON_LIBRARY_PATH}")
+        add_definitions(-DMONGO)
 
-    # We add suffix name because cmake could not detect it correctly...
-    include_directories("${MONGOC_INCLUDES_FOLDER}/libmongoc-1.0")
-    include_directories("${BSON_INCLUDES_FOLDER}/libbson-1.0")
+        # We add suffix name because cmake could not detect it correctly...
+        include_directories("${MONGOC_INCLUDES_FOLDER}/libmongoc-1.0")
+        include_directories("${BSON_INCLUDES_FOLDER}/libbson-1.0")
 
-    target_link_libraries(fastnetmon ${MONGOC_LIBRARY_PATH} ${BSON_LIBRARY_PATH})
+        target_link_libraries(fastnetmon ${MONGOC_LIBRARY_PATH} ${BSON_LIBRARY_PATH})
 
-# Try to find mongo-c and bson paths using pkg-config
-elseif (PKG_CONFIG_FOUND)
-    pkg_search_module(MONGOC libmongoc-1.0)
-    pkg_search_module(BSON libbson-1.0)
-    if(MONGOC_FOUND AND BSON_FOUND)
-        message(STATUS "We have found mongo-c and bson on your system")
-#        add_definitions(-DMONGO)
-	include_directories("${MONGOC_INCLUDEDIR}/libmongoc-1.0")
-	include_directories("${BSON_INCLUDEDIR}/libbson-1.0")
-	find_library(MONGOC_LIBRARY_PATH NAMES mongoc-1.0 PATHS "${MONGOC_LIBDIR}" NO_DEFAULT_PATH)
-	find_library(BSON_LIBRARY_PATH NAMES bson-1.0 PATHS "${BSON_LIBDIR}" NO_DEFAULT_PATH)
+    # Try to find mongo-c and bson paths using pkg-config
+    elseif (PKG_CONFIG_FOUND)
+        pkg_search_module(MONGOC libmongoc-1.0)
+        pkg_search_module(BSON libbson-1.0)
+        if(MONGOC_FOUND AND BSON_FOUND)
+            message(STATUS "We have found mongo-c and bson on your system")
+    #        add_definitions(-DMONGO)
+    	include_directories("${MONGOC_INCLUDEDIR}/libmongoc-1.0")
+    	include_directories("${BSON_INCLUDEDIR}/libbson-1.0")
+    	find_library(MONGOC_LIBRARY_PATH NAMES mongoc-1.0 PATHS "${MONGOC_LIBDIR}" NO_DEFAULT_PATH)
+    	find_library(BSON_LIBRARY_PATH NAMES bson-1.0 PATHS "${BSON_LIBDIR}" NO_DEFAULT_PATH)
+        endif()
+    else()
+        message(WARNING "We can't find Mongo C library")
     endif()
-else()
-    message(WARNING "We can't find Mongo C library")
 endif()
 
 ### Look for libpcap
